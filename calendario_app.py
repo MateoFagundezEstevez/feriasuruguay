@@ -15,13 +15,15 @@ CSV_FILE = "eventos.csv"
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv(CSV_FILE, parse_dates=['Fecha inicio', 'Fecha fin'])
+        df = pd.read_csv(CSV_FILE)
+        df['Fecha inicio'] = pd.to_datetime(df['Fecha inicio'], errors='coerce')
+        df['Fecha fin'] = pd.to_datetime(df['Fecha fin'], errors='coerce')
     except FileNotFoundError:
-        df = pd.DataFrame(columns=["Nombre", "Fecha inicio", "Fecha fin", "Ciudad", "Departamento", "Sector", "Organizador", "Contacto", "Web", "Aprobado"])
+        df = pd.DataFrame(columns=[
+            "Nombre", "Fecha inicio", "Fecha fin", "Ciudad", "Departamento",
+            "Sector", "Organizador", "Contacto", "Web", "Aprobado"
+        ])
     return df
-
-def save_data(df):
-    df.to_csv(CSV_FILE, index=False)
 
 # Mostrar calendario filtrable
 st.header(":date: Explorá el calendario")
