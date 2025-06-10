@@ -29,6 +29,8 @@ def load_data():
         ])
     return df
 
+def save_data(df):
+    df.to_csv(CSV_FILE, index=False)
 
 # Mostrar calendario filtrable
 st.header(":date: Explorá el calendario")
@@ -39,12 +41,12 @@ data_aprobada = data[data['Aprobado'] == True]
 with st.expander("Filtrar por criterios"):
     depto = st.selectbox("Departamento", options=["Todos"] + sorted(data_aprobada['Departamento'].dropna().unique().tolist()))
     sector = st.selectbox("Sector", options=["Todos"] + sorted(data_aprobada['Sector'].dropna().unique().tolist()))
-meses_validos = data_aprobada['Fecha inicio'].dropna()
-meses_validos = meses_validos[meses_validos.apply(lambda x: isinstance(x, pd.Timestamp))]
 
-meses_opciones = sorted(meses_validos.dt.strftime("%B").unique().tolist())
+    meses_validos = data_aprobada['Fecha inicio'].dropna()
+    meses_validos = meses_validos[meses_validos.apply(lambda x: isinstance(x, pd.Timestamp))]
+    meses_opciones = sorted(meses_validos.dt.strftime("%B").unique().tolist())
 
-mes = st.selectbox("Mes", options=["Todos"] + meses_opciones)
+    mes = st.selectbox("Mes", options=["Todos"] + meses_opciones)
 
     if depto != "Todos":
         data_aprobada = data_aprobada[data_aprobada['Departamento'] == depto]
