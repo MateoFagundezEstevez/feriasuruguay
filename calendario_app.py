@@ -18,12 +18,17 @@ def load_data():
         df = pd.read_csv(CSV_FILE)
         df['Fecha inicio'] = pd.to_datetime(df['Fecha inicio'], errors='coerce')
         df['Fecha fin'] = pd.to_datetime(df['Fecha fin'], errors='coerce')
+        df['Aprobado'] = df['Aprobado'].astype(str).str.strip().str.lower().map({
+            'sí': True, 'si': True, 'true': True,
+            'no': False, 'false': False
+        })
     except FileNotFoundError:
         df = pd.DataFrame(columns=[
             "Nombre", "Fecha inicio", "Fecha fin", "Ciudad", "Departamento",
             "Sector", "Organizador", "Contacto", "Web", "Aprobado"
         ])
     return df
+
 
 # Mostrar calendario filtrable
 st.header(":date: Explorá el calendario")
