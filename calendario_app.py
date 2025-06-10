@@ -1,11 +1,21 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import uuid
 
-st.set_page_config(page_title="Calendario de Ferias en Uruguay", layout="wide")
-st.title("🌎 Calendario de Ferias y Eventos Comerciales en Uruguay")
-st.markdown("Explorá eventos y sugerí nuevas ferias bajo un formato predefinido.")
+st.set_page_config(page_title="🌈 Calendario de Ferias en Uruguay", layout="wide")
+
+# Título colorido y centrado con emoji
+st.markdown("""
+<div style="text-align:center; color:#2E86C1; font-size:32px; font-weight:bold;">
+    🌎 Calendario de Ferias y Eventos Comerciales en Uruguay
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<p style="text-align:center; color:#566573; font-size:16px;">
+    Explora eventos, filtra y sugiere nuevas ferias con facilidad y estilo.
+</p>
+""", unsafe_allow_html=True)
 
 CSV_FILE = "eventos.csv"
 
@@ -26,27 +36,46 @@ def load_data():
         ])
     return df
 
-def save_data(df):
-    df.to_csv(CSV_FILE, index=False)
-
-# --- FILTROS MEJORADOS ---
-
-st.header(":date: Explorá el calendario")
-
 data = load_data()
 data_aprobada = data[data['Aprobado'] == True]
 
-with st.expander("Filtrar por criterios"):
+# --- Sección de filtros con columnas y tooltips ---
+st.header(":date: Explorá el calendario")
+
+with st.expander("Filtrar eventos 🔍"):
+    col1, col2, col3, col4 = st.columns(4)
+
     deptos = sorted(data_aprobada['Departamento'].dropna().unique())
     sectores = sorted(data_aprobada['Sector'].dropna().unique())
 
-    depto_sel = st.multiselect("Departamento", options=deptos, default=deptos)
-    sector_sel = st.multiselect("Sector", options=sectores, default=sectores)
-
-    fechas = data_aprobada[['Fecha inicio', 'Fecha fin']].dropna()
-    min_fecha = fechas['Fecha inicio'].min()
-    max_fecha = fechas['Fecha fin'].max()
-    rango_fechas = st.date_input("Rango de fechas", [min_fecha.date(), max_fecha.date()])
+    with col1:
+        depto_sel = st.multiselect(
+            label="Departamento", 
+            options=deptos, 
+            default=deptos,
+            help="Seleccioná uno o varios departamentos para filtrar."
+        )
+    with col2:
+        sector_sel = st.multiselect(
+            label="Sector", 
+            options=sectores, 
+            default=sectores,
+            help="Elegí sectores para afinar la búsqueda."
+        )
+    with col3:
+        fechas = data_aprobada[['Fecha inicio', 'Fecha fin']].dropna()
+        min_fecha = fechas['Fecha inicio'].min()
+        max_fecha = fechas['Fecha fin'].max()
+        rango_fechas = st.date_input(
+            "Rango de fechas",
+            [min_fecha.date(), max_fecha.date()],
+            help="Seleccioná el rango de fechas para los eventos."
+        )
+    with col4:
+        if st.button("🔄 Limpiar filtros"):
+            depto_sel = deptos
+            sector_sel = sectores
+            rango_fechas = [min_fecha.date(), max_fecha.date()]
 
     # Aplicar filtros
     filtered = data_aprobada[
@@ -56,30 +85,37 @@ with st.expander("Filtrar por criterios"):
         (data_aprobada['Fecha inicio'].dt.date <= rango_fechas[1])
     ]
 
-    if st.button("Limpiar filtros"):
-        filtered = data_aprobada
+# Mostrar número de eventos encontrados
+st.markdown(f"### 🎉 Se encontraron **{len(filtered)}** eventos con esos filtros.")
 
-st.dataframe(filtered.sort_values(by="Fecha inicio"), use_container_width=True)
+# Mostrar tabla con colores en aprobados (solo aprobados aquí)
+def color_row(row):
+    return ['background-color: #D5F5E3' if row['Aprobado'] else 'background-color: #FADBD8']*len(row)
 
-# --- FORMULARIO MEJORADO ---
+st.dataframe(filtered.sort_values(by="Fecha inicio").style.apply(color_row, axis=1), use_container_width=True)
 
+# --- Formulario más lindo y ordenado ---
 st.header(":mailbox_with_mail: Sugerí una feria")
 
 data_departamentos = sorted(data['Departamento'].dropna().unique())
 data_sectores = sorted(data['Sector'].dropna().unique())
 
 with st.form("sugerencia_form"):
-    nombre = st.text_input("Nombre del evento *")
-    fecha_inicio = st.date_input("Fecha de inicio *")
-    fecha_fin = st.date_input("Fecha de fin *")
-    ciudad = st.text_input("Ciudad *")
-    departamento = st.selectbox("Departamento *", options=[""] + data_departamentos)
-    sector = st.selectbox("Sector *", options=[""] + data_sectores)
-    organizador = st.text_input("Organizador *")
-    contacto = st.text_input("Email o teléfono de contacto *")
-    web = st.text_input("Web o redes sociales")
-    descripcion = st.text_area("Descripción breve del evento")
-    enviado = st.form_submit_button("Enviar sugerencia")
+    c1, c2 = st.columns(2)
+    with c1:
+        nombre = st.text_input("Nombre del evento *")
+        fecha_inicio = st.date_input("Fecha de inicio *")
+        fecha_fin = st.date_input("Fecha de fin *")
+        ciudad = st.text_input("Ciudad *")
+        departamento = st.selectbox("Departamento *", options=[""] + data_departamentos)
+    with c2:
+        sector = st.selectbox("Sector *", options=[""] + data_sectores)
+        organizador = st.text_input("Organizador *")
+        contacto = st.text_input("Email o teléfono de contacto *")
+        web = st.text_input("Web o redes sociales")
+        descripcion = st.text_area("Descripción breve del evento")
+
+    enviado = st.form_submit_button("Enviar sugerencia 🚀")
 
     if enviado:
         errores = []
@@ -109,12 +145,13 @@ with st.form("sugerencia_form"):
             }])
             df_actual = load_data()
             df_actual = pd.concat([df_actual, nuevo_evento], ignore_index=True)
-            save_data(df_actual)
-            st.success("Tu sugerencia fue enviada y está pendiente de aprobación. ¡Gracias!")
+            df_actual.to_csv(CSV_FILE, index=False)
+            st.success("¡Gracias por tu sugerencia! Está pendiente de aprobación.")
+            st.balloons()
 
-# --- MODERACIÓN MEJORADA ---
-
+# --- Sidebar moderación con mejor look ---
 st.sidebar.header(":lock: Moderación")
+
 password = st.sidebar.text_input("Contraseña de administrador", type="password")
 
 if password == "admin123":
@@ -122,22 +159,22 @@ if password == "admin123":
     st.subheader(":shield: Panel de moderación")
     df = load_data()
     pendientes = df[df['Aprobado'] == False]
-    st.write(f"Eventos pendientes: {len(pendientes)}")
+    st.write(f"Eventos pendientes: **{len(pendientes)}**")
 
     for idx, row in pendientes.iterrows():
-        with st.expander(row['Nombre']):
+        with st.expander(f"📌 {row['Nombre']}"):
             st.write(row.drop(labels=["Aprobado"]))
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("Aprobar", key=f"ap_{idx}"):
+                if st.button("✅ Aprobar", key=f"ap_{idx}"):
                     df.at[idx, "Aprobado"] = True
-                    save_data(df)
+                    df.to_csv(CSV_FILE, index=False)
                     st.experimental_rerun()
             with col2:
-                if st.button("Eliminar", key=f"del_{idx}"):
-                    if st.confirm("¿Seguro que quieres eliminar este evento?"):
+                if st.button("❌ Eliminar", key=f"del_{idx}"):
+                    if st.confirm("¿Seguro que querés eliminar este evento?"):
                         df = df.drop(idx)
-                        save_data(df)
+                        df.to_csv(CSV_FILE, index=False)
                         st.experimental_rerun()
 else:
     st.sidebar.info("Ingresá la contraseña para acceder al panel de moderación.")
